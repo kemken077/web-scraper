@@ -3,7 +3,6 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const express = require('express');
 const app = express();
-const url = 'https://www.dolarhoy.com';
 
 const getCurrencyData = (currencyName, values) => {
   const currency = {
@@ -18,24 +17,31 @@ const parseValue = (value, splitIdentifier) => {
 };
 
 
-axios(url)
-  .then(response => {
-    const html = response.data;
-    const $ = cheerio.load(html);
-    let currencyPrices = [];
+app.get('/', (req, res) => {
+  res.send('Web scraper')
+});
 
-    const tilesDolar = $('.tile.is-parent.is-7.is-vertical .tile.is-child', html);
-    tilesDolar.each(function() {
-      const title = $(this).find('.title').text();
-      const valueBuy = parseValue($(this).find('.values .compra').text(), '$');
-      const valueSale = parseValue($(this).find('.values .venta').text(), '$');
-      const currencyData = getCurrencyData(title, { buy: valueBuy, sale: valueSale});
-      currencyPrices.push(currencyData);
+app.get('/getDolarPriceArgentina', (req, res) => {
+  const url = 'https://www.dolarhoy.com';
+  axios(url)
+    .then(response => {
+      const html = response.data;
+      const $ = cheerio.load(html);
+      let currencyPrices = [];
 
-      console.log(currencyData);
-    });
+      const tilesDolar = $('.tile.is-parent.is-7.is-vertical .tile.is-child', html);
+      tilesDolar.each(function() {
+        const title = $(this).find('.title').text();
+        const valueBuy = parseValue($(this).find('.values .compra').text(), '$');
+        const valueSale = parseValue($(this).find('.values .venta').text(), '$');
+        const currencyData = getCurrencyData(title, { buy: valueBuy, sale: valueSale});
+        currencyPrices.push(currencyData);
+      });
 
-  })
-  .catch(err => console.log(err));
+      res.send(currencyPrices);
+
+    })
+    .catch(err => console.log(err));
+});
 
 app.listen(PORT, () => console.log(`server running on port ${PORT}`));
